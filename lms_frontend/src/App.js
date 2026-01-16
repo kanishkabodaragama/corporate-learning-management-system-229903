@@ -3,6 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { applyThemeCssVariables } from "./theme";
 
+import { AuthProvider } from "./auth/AuthContext";
+import ProtectedRoute from "./auth/ProtectedRoute";
+
 import AppLayout from "./components/AppLayout";
 
 import DashboardPage from "./pages/DashboardPage";
@@ -26,25 +29,31 @@ function App() {
 
   return (
     <div className="appRoot">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public route */}
+            <Route path="/login" element={<LoginPage />} />
 
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="courses" element={<CoursesPage />} />
-            <Route path="sessions" element={<SessionsPage />} />
-            <Route path="enrollments" element={<EnrollmentsPage />} />
-            <Route path="attendance" element={<AttendancePage />} />
-            <Route path="quizzes" element={<QuizzesPage />} />
-            <Route path="approvals" element={<ApprovalsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+            {/* Protected app shell + pages */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<AppLayout />}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="courses" element={<CoursesPage />} />
+                <Route path="sessions" element={<SessionsPage />} />
+                <Route path="enrollments" element={<EnrollmentsPage />} />
+                <Route path="attendance" element={<AttendancePage />} />
+                <Route path="quizzes" element={<QuizzesPage />} />
+                <Route path="approvals" element={<ApprovalsPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </div>
   );
 }

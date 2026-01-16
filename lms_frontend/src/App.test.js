@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import App from "./App";
 
-test("renders dashboard scaffold", async () => {
+test("renders login screen when unauthenticated", async () => {
   render(<App />);
-  const heading = await screen.findByRole("heading", { name: /dashboard/i });
+  const heading = await screen.findByRole("heading", { name: /sign in/i });
   expect(heading).toBeInTheDocument();
 });

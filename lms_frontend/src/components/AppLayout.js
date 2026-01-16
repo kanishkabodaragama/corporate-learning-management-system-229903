@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 const ROLE_OPTIONS = ["admin", "instructor", "learner"];
 
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
 // PUBLIC_INTERFACE
 export default function AppLayout() {
   const location = useLocation();
+  const { user, signOut, isAuthActionLoading } = useAuth();
 
   // Desktop behavior
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -40,6 +42,11 @@ export default function AppLayout() {
   const onToggleMobileNav = () => setIsMobileNavOpen((v) => !v);
   const onCloseMobileNav = () => setIsMobileNavOpen(false);
   const onToggleCollapsed = () => setIsCollapsed((v) => !v);
+
+  const onSignOut = async () => {
+    // UI is intentionally minimal; ProtectedRoute will redirect after session clears.
+    await signOut();
+  };
 
   return (
     <div className="shell">
@@ -105,7 +112,7 @@ export default function AppLayout() {
 
         <div className="sidebarFooter">
           <div className="sidebarHint">
-            Role-aware nav is a placeholder (auth comes next).
+            Role-aware nav is a placeholder (roles/permissions come next).
           </div>
         </div>
       </aside>
@@ -141,9 +148,20 @@ export default function AppLayout() {
               </select>
             </label>
 
-            <div className="userChip" aria-label="User placeholder">
-              Demo User
+            <div className="userChip" aria-label="Signed in user">
+              {user?.email || "Signed in"}
             </div>
+
+            <button
+              type="button"
+              className="iconButton"
+              onClick={onSignOut}
+              disabled={isAuthActionLoading}
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              ⎋
+            </button>
           </div>
         </header>
 
