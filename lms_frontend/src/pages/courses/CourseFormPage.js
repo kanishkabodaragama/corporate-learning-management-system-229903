@@ -223,7 +223,7 @@ export default function CourseFormPage({ mode }) {
                 </label>
               </div>
             ) : (
-              <div className="alert" style={{ borderColor: "rgba(55, 65, 81, 0.22)", background: "rgba(55, 65, 81, 0.06)" }}>
+              <div className="alert alertNeutral">
                 Publishing is handled via the Approvals workflow. After saving, open the course and “Submit for approval”.
               </div>
             )}

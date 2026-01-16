@@ -142,7 +142,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="primaryButton"
+            className="button buttonPrimary buttonFull"
             disabled={isSessionLoading || isAuthActionLoading || !isSupabaseConfigured}
           >
             {isAuthActionLoading

@@ -57,6 +57,8 @@
   flex-direction: column;
   position: relative;
   transition: width 200ms ease, transform 200ms ease;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .sidebarCollapsed {
@@ -189,11 +191,11 @@
 }
 
 .topbar {
-  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-background);
 }
@@ -205,9 +207,26 @@
   min-width: 0;
 }
 
-.topbarTitle {
-  font-weight: 700;
+.topbarTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.topbarKicker {
+  font-weight: 800;
   letter-spacing: 0.2px;
+  font-size: 13px;
+  color: rgba(17, 24, 39, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbarPageTitle {
+  font-weight: 900;
+  letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -338,6 +357,72 @@
   text-decoration: underline;
 }
 
+/* Breadcrumbs (consistent across screens via AppLayout topbar) */
+.breadcrumbs {
+  min-width: 0;
+}
+
+.breadcrumbsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: rgba(17, 24, 39, 0.65);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.breadcrumbsItem {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.breadcrumbsLink {
+  color: rgba(17, 24, 39, 0.72);
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.breadcrumbsLink:hover {
+  background: var(--color-primary-softer);
+  color: rgba(17, 24, 39, 0.9);
+}
+
+.breadcrumbsSep {
+  color: rgba(17, 24, 39, 0.35);
+}
+
+/* Focus visibility (accessibility baseline) */
+.navLink:focus-visible,
+.inlineLink:focus-visible,
+.breadcrumbsLink:focus-visible,
+.button:focus-visible,
+.iconButton:focus-visible,
+.tabButton:focus-visible,
+.segmentedButton:focus-visible,
+.buttonLink:focus-visible,
+.overlay:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.18);
+  border-color: rgba(55, 65, 81, 0.42);
+}
+
+.authInput:focus-visible,
+.authCard button:focus-visible,
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+  outline: none;
+  border-color: rgba(55, 65, 81, 0.45);
+  box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.12);
+}
+
 /* Data UI (tables, forms, toolbars) */
 .noticeCard code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
@@ -440,6 +525,17 @@
   color: var(--color-error);
 }
 
+.alertNeutral {
+  border-color: rgba(55, 65, 81, 0.22);
+  background: rgba(55, 65, 81, 0.06);
+  color: rgba(17, 24, 39, 0.88);
+}
+
+.buttonFull {
+  width: 100%;
+  justify-content: center;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -528,6 +624,7 @@
 .tableWrap {
   width: 100%;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: 12px;
   border: 1px solid var(--color-border);
 }
@@ -914,6 +1011,22 @@
     opacity: 1;
     pointer-events: auto;
   }
+
+  /* Toolbars/filters: stack naturally and avoid min-width overflow */
+  .fieldInline {
+    min-width: 100%;
+  }
+
+  .toolbarLeft,
+  .toolbarRight {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbarPageTitle {
+    display: none; /* keep header uncluttered on very small screens */
+  }
 }
 
 /* Approvals UI (tabs, split panels, modals) */
@@ -975,6 +1088,8 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px;
+  max-height: min(80vh, 640px);
+  overflow: auto;
 }
 
 .modalHeader {

@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useAuthorization } from "../auth/useAuthorization";
 import { titleCaseRole } from "../auth/roles";
@@ -33,6 +33,66 @@ function getItemLabel(item, role) {
   return item?.labelByRole?.[role] ?? item.label;
 }
 
+const PATH_LABELS = {
+  dashboard: "Dashboard",
+  courses: "Courses",
+  sessions: "Sessions",
+  quizzes: "Quizzes",
+  enrollments: "Enrollments",
+  attendance: "Attendance",
+  approvals: "Approvals",
+  reports: "Reports",
+  settings: "Settings",
+};
+
+function computeBreadcrumbs(pathname) {
+  const segments = String(pathname || "/")
+    .split("/")
+    .filter(Boolean);
+
+  // Default to dashboard for "/" and unknown routes.
+  if (segments.length === 0) {
+    return {
+      pageTitle: "Dashboard",
+      crumbs: [{ label: "Dashboard", to: "/dashboard" }],
+    };
+  }
+
+  const section = segments[0];
+  const sectionLabel = PATH_LABELS[section] || "App";
+  const crumbs = [{ label: sectionLabel, to: `/${section}` }];
+
+  let subLabel = "";
+  if (segments.length >= 2) {
+    const a = segments[1];
+    const b = segments[2];
+
+    if (section === "courses") {
+      subLabel = a === "new" ? "New" : b === "edit" ? "Edit" : "Details";
+    } else if (section === "sessions") {
+      subLabel = a === "new" ? "New" : b === "edit" ? "Edit" : "Details";
+    } else if (section === "quizzes") {
+      if (a === "new") subLabel = "New";
+      else if (a === "attempts") subLabel = "Attempt review";
+      else if (b === "edit") subLabel = "Edit";
+      else if (b === "assign") subLabel = "Assign";
+      else if (b === "take") subLabel = "Take";
+      else if (a) subLabel = "Details";
+    } else if (section === "enrollments") {
+      subLabel = a === "new" ? "New" : "Details";
+    } else if (section === "attendance") {
+      subLabel = a === "sessions" ? "Take attendance" : "";
+    } else if (section === "approvals") {
+      subLabel = segments.length >= 3 ? "Details" : "";
+    } else {
+      subLabel = "";
+    }
+  }
+
+  if (subLabel) crumbs.push({ label: subLabel, to: pathname });
+  return { pageTitle: subLabel ? `${sectionLabel} · ${subLabel}` : sectionLabel, crumbs };
+}
+
 // PUBLIC_INTERFACE
 export default function AppLayout() {
   const location = useLocation();
@@ -49,10 +109,33 @@ export default function AppLayout() {
     return NAV_ITEMS.filter((item) => item.roles.includes(role));
   }, [role]);
 
+  const { pageTitle, crumbs } = useMemo(() => computeBreadcrumbs(location.pathname), [location.pathname]);
+
   /** Close mobile drawer when navigating to a new location */
   useEffect(() => {
     setIsMobileNavOpen(false);
   }, [location.pathname]);
+
+  /** Prevent background scroll when the mobile drawer is open. */
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    if (isMobileNavOpen) document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobileNavOpen]);
+
+  /** Allow ESC to close the drawer (basic accessibility). */
+  useEffect(() => {
+    if (!isMobileNavOpen) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setIsMobileNavOpen(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isMobileNavOpen]);
 
   const onToggleMobileNav = () => setIsMobileNavOpen((v) => !v);
   const onCloseMobileNav = () => setIsMobileNavOpen(false);
@@ -80,6 +163,7 @@ export default function AppLayout() {
       />
 
       <aside
+        id="primary-sidebar"
         className={[
           "sidebar",
           isCollapsed ? "sidebarCollapsed" : "",
@@ -164,12 +248,44 @@ export default function AppLayout() {
               type="button"
               className="iconButton hamburger"
               onClick={onToggleMobileNav}
-              aria-label="Open navigation"
+              aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
+              aria-controls="primary-sidebar"
+              aria-expanded={isMobileNavOpen}
             >
               ☰
             </button>
 
-            <div className="topbarTitle">Ocean Professional LMS</div>
+            <div className="topbarTitleGroup">
+              <div className="topbarKicker">Ocean Professional LMS</div>
+
+              <nav className="breadcrumbs" aria-label="Breadcrumb">
+                <ol className="breadcrumbsList">
+                  {crumbs.map((c, idx) => {
+                    const isLast = idx === crumbs.length - 1;
+                    return (
+                      <li key={`${c.to}-${c.label}`} className="breadcrumbsItem">
+                        {isLast ? (
+                          <span aria-current="page">{c.label}</span>
+                        ) : (
+                          <>
+                            <Link className="breadcrumbsLink" to={c.to}>
+                              {c.label}
+                            </Link>
+                            <span className="breadcrumbsSep" aria-hidden="true">
+                              /
+                            </span>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+            </div>
+
+            <div className="topbarPageTitle" aria-label="Current page">
+              {pageTitle}
+            </div>
           </div>
 
           <div className="topbarRight">
