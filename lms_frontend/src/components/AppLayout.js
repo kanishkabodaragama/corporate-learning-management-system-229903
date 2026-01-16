@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useAuthorization } from "../auth/useAuthorization";
 import { titleCaseRole } from "../auth/roles";
+import { isDemoModeEnabled } from "../auth/demoMode";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", roles: ["admin", "instructor", "learner"] },
@@ -147,6 +148,7 @@ export default function AppLayout() {
   };
 
   const roleLabel = titleCaseRole(role);
+  const demoModeEnabled = isDemoModeEnabled();
 
   return (
     <div className="shell">
@@ -289,6 +291,12 @@ export default function AppLayout() {
           </div>
 
           <div className="topbarRight">
+            {demoModeEnabled ? (
+              <span className="badge badgeWarning" title="Demo authentication is enabled (non-production only).">
+                Demo Mode
+              </span>
+            ) : null}
+
             <div className="roleSelect" aria-label="Current role">
               <span className="roleLabel">Role</span>
               <span className="roleValue">{roleLabel}</span>

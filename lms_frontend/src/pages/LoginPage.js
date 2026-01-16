@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { isSupabaseConfigured } from "../lib/supabaseClient";
+import { DEMO_ACCOUNTS, isDemoModeEnabled } from "../auth/demoMode";
 
 function safeTrim(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -12,7 +13,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { signIn, signUp, user, isSessionLoading, isAuthActionLoading } = useAuth();
+  const demoModeEnabled = isDemoModeEnabled();
+
+  const { signIn, signUp, demoSignIn, user, isSessionLoading, isAuthActionLoading } = useAuth();
 
   const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [email, setEmail] = useState("");
@@ -33,6 +36,11 @@ export default function LoginPage() {
     }
   }, [user, isSessionLoading, navigate, redirectTo]);
 
+  // Prevent switching into sign-up mode while demo mode is active (keep demo strictly local-only).
+  useEffect(() => {
+    if (demoModeEnabled) setMode("signin");
+  }, [demoModeEnabled]);
+
   const title = mode === "signin" ? "Sign in" : "Create account";
   const hint =
     mode === "signin"
@@ -44,18 +52,28 @@ export default function LoginPage() {
     setError("");
     setInfo("");
 
-    if (!isSupabaseConfigured) {
-      setError(
-        "Supabase is not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY."
-      );
-      return;
-    }
-
     const normalizedEmail = safeTrim(email);
     const normalizedPassword = password;
 
     if (!normalizedEmail || !normalizedPassword) {
       setError("Please enter both email and password.");
+      return;
+    }
+
+    // Demo Mode: local-only credential validation; never call Supabase.
+    if (demoModeEnabled) {
+      const { error: demoError } = await demoSignIn(normalizedEmail, normalizedPassword);
+      if (demoError) {
+        setError(demoError);
+        return;
+      }
+      navigate(redirectTo, { replace: true });
+      return;
+    }
+
+    // Normal mode: Supabase required
+    if (!isSupabaseConfigured) {
+      setError("Supabase is not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY.");
       return;
     }
 
@@ -85,13 +103,51 @@ export default function LoginPage() {
     setMode("signin");
   }
 
+  function onAutofill(account) {
+    setError("");
+    setInfo("");
+    setMode("signin");
+    setEmail(account.email);
+    setPassword(account.password);
+  }
+
   return (
     <div className="authWrap">
       <section className="authCard" aria-label="Login">
         <h1 className="authTitle">{title}</h1>
         <p className="authHint">{hint}</p>
 
-        {!isSupabaseConfigured ? (
+        {demoModeEnabled ? (
+          <div className="demoBanner" role="note" aria-label="Demo Mode accounts">
+            <div className="demoBannerTitle">Demo Mode is enabled</div>
+            <div className="demoBannerSub">
+              Use one of the following demo accounts. These credentials are validated locally and are never sent to
+              Supabase or any API.
+            </div>
+
+            <div className="demoAccounts">
+              {DEMO_ACCOUNTS.map((a) => (
+                <div key={a.email} className="demoAccountRow">
+                  <div className="demoAccountMeta">
+                    <div className="demoAccountRole">{a.label}</div>
+                    <div className="demoAccountEmail">{a.email}</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="button buttonSecondary"
+                    onClick={() => onAutofill(a)}
+                    disabled={isSessionLoading || isAuthActionLoading}
+                    aria-label={`Use ${a.label} demo account`}
+                  >
+                    Autofill
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {!demoModeEnabled && !isSupabaseConfigured ? (
           <div className="authWarning" role="note">
             Supabase env vars are missing. Authentication is disabled until
             <br />
@@ -120,7 +176,7 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
+              placeholder={demoModeEnabled ? "admin@demo.lms" : "you@company.com"}
               disabled={isSessionLoading || isAuthActionLoading}
               required
             />
@@ -143,7 +199,12 @@ export default function LoginPage() {
           <button
             type="submit"
             className="button buttonPrimary buttonFull"
-            disabled={isSessionLoading || isAuthActionLoading || !isSupabaseConfigured}
+            disabled={
+              isSessionLoading ||
+              isAuthActionLoading ||
+              (!demoModeEnabled && !isSupabaseConfigured) ||
+              (demoModeEnabled && mode !== "signin")
+            }
           >
             {isAuthActionLoading
               ? "Please wait…"
@@ -154,7 +215,11 @@ export default function LoginPage() {
         </form>
 
         <div className="authFooter">
-          {mode === "signin" ? (
+          {demoModeEnabled ? (
+            <p className="authHint" style={{ marginTop: 14 }}>
+              Demo Mode is active — sign up is disabled.
+            </p>
+          ) : mode === "signin" ? (
             <p className="authHint" style={{ marginTop: 14 }}>
               No account?{" "}
               <button
