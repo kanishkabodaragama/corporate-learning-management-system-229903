@@ -11,8 +11,18 @@ const NAV_ITEMS = [
   { to: "/sessions", label: "Sessions", labelByRole: { learner: "My Sessions" }, roles: ["admin", "instructor", "learner"] },
   { to: "/quizzes", label: "Quizzes", labelByRole: { learner: "My Quizzes" }, roles: ["admin", "instructor", "learner"] },
 
-  { to: "/enrollments", label: "Enrollments", roles: ["admin", "instructor"] },
-  { to: "/attendance", label: "Attendance", roles: ["admin", "instructor"] },
+  {
+    to: "/enrollments",
+    label: "Enrollments",
+    labelByRole: { learner: "My Enrollments" },
+    roles: ["admin", "instructor", "learner"],
+  },
+  {
+    to: "/attendance",
+    label: "Attendance",
+    labelByRole: { learner: "My Attendance" },
+    roles: ["admin", "instructor", "learner"],
+  },
 
   { to: "/approvals", label: "Approvals", roles: ["admin"] },
   { to: "/reports", label: "Reports", roles: ["admin"] },

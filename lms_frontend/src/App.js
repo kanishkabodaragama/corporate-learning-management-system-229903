@@ -14,6 +14,13 @@ import CoursesPage from "./pages/CoursesPage";
 import SessionsPage from "./pages/SessionsPage";
 import EnrollmentsPage from "./pages/EnrollmentsPage";
 import AttendancePage from "./pages/AttendancePage";
+
+import EnrollmentsListPage from "./pages/enrollments/EnrollmentsListPage";
+import EnrollmentDetailsPage from "./pages/enrollments/EnrollmentDetailsPage";
+import EnrollmentAddPage from "./pages/enrollments/EnrollmentAddPage";
+
+import AttendanceHomePage from "./pages/attendance/AttendanceHomePage";
+import AttendanceTakePage from "./pages/attendance/AttendanceTakePage";
 import QuizzesPage from "./pages/QuizzesPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import ReportsPage from "./pages/ReportsPage";
@@ -92,22 +99,30 @@ function App() {
                   />
                 </Route>
 
-                <Route
-                  path="enrollments"
-                  element={
-                    <RoleRequired allowedRoles={["admin", "instructor"]}>
-                      <EnrollmentsPage />
-                    </RoleRequired>
-                  }
-                />
-                <Route
-                  path="attendance"
-                  element={
-                    <RoleRequired allowedRoles={["admin", "instructor"]}>
-                      <AttendancePage />
-                    </RoleRequired>
-                  }
-                />
+                <Route path="enrollments" element={<EnrollmentsPage />}>
+                  <Route index element={<EnrollmentsListPage />} />
+                  <Route
+                    path="new"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <EnrollmentAddPage />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route path=":enrollmentId" element={<EnrollmentDetailsPage />} />
+                </Route>
+
+                <Route path="attendance" element={<AttendancePage />}>
+                  <Route index element={<AttendanceHomePage />} />
+                  <Route
+                    path="sessions/:sessionId"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <AttendanceTakePage />
+                      </RoleRequired>
+                    }
+                  />
+                </Route>
 
                 <Route path="quizzes" element={<QuizzesPage />} />
 

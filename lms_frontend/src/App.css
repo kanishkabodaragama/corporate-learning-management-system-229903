@@ -589,6 +589,18 @@
   color: #065f46;
 }
 
+.badgeWarning {
+  background: rgba(245, 158, 11, 0.10);
+  border-color: rgba(245, 158, 11, 0.22);
+  color: #92400e;
+}
+
+.badgeError {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.22);
+  color: #991b1b;
+}
+
 .badgeNeutral {
   background: rgba(55, 65, 81, 0.06);
   border-color: rgba(55, 65, 81, 0.18);
