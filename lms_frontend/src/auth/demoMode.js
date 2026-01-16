@@ -49,8 +49,11 @@ export function isDemoModeEnabled() {
  * @returns {{role:"admin"|"instructor"|"learner", email:string, password:string, label:string} | null}
  */
 export function findDemoAccount(email, password) {
-  const e = String(email || "").trim().toLowerCase();
+  // Intentionally trim only (to ignore accidental whitespace) but keep matching
+  // exact and case-sensitive per requirements.
+  const e = String(email || "").trim();
   const p = String(password || "");
-  const hit = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === e && a.password === p);
+
+  const hit = DEMO_ACCOUNTS.find((a) => a.email === e && a.password === p);
   return hit || null;
 }
