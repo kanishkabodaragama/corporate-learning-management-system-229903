@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import PlaceholderPage from "./PlaceholderPage";
+import { Outlet } from "react-router-dom";
 import { useAuthorization } from "../auth/useAuthorization";
 
 // PUBLIC_INTERFACE
@@ -10,14 +10,14 @@ export default function SessionsPage() {
     if (role === "learner") {
       return {
         title: "My Sessions",
-        description: "View your upcoming sessions, join live training, and track attendance status.",
+        description: "View published upcoming sessions, schedules, and attendance details.",
       };
     }
 
     if (role === "instructor") {
       return {
         title: "Sessions",
-        description: "Schedule and deliver instructor-led sessions you own, and manage rosters.",
+        description: "Schedule and manage instructor-led sessions you own, including publishing.",
       };
     }
 
@@ -27,5 +27,14 @@ export default function SessionsPage() {
     };
   }, [role]);
 
-  return <PlaceholderPage title={title} description={description} />;
+  return (
+    <section className="page" aria-label={title}>
+      <header>
+        <h1 className="pageTitle">{title}</h1>
+        <p className="pageDesc">{description}</p>
+      </header>
+
+      <Outlet />
+    </section>
+  );
 }

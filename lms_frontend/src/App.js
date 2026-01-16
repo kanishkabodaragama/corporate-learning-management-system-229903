@@ -21,6 +21,14 @@ import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
+import CoursesListPage from "./pages/courses/CoursesListPage";
+import CourseDetailsPage from "./pages/courses/CourseDetailsPage";
+import CourseFormPage from "./pages/courses/CourseFormPage";
+
+import SessionsListPage from "./pages/sessions/SessionsListPage";
+import SessionDetailsPage from "./pages/sessions/SessionDetailsPage";
+import SessionFormPage from "./pages/sessions/SessionFormPage";
+
 // PUBLIC_INTERFACE
 function App() {
   /** Apply the centralized theme once on app start. */
@@ -41,8 +49,48 @@ function App() {
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="courses" element={<CoursesPage />} />
-                <Route path="sessions" element={<SessionsPage />} />
+
+                <Route path="courses" element={<CoursesPage />}>
+                  <Route index element={<CoursesListPage />} />
+                  <Route path=":courseId" element={<CourseDetailsPage />} />
+                  <Route
+                    path="new"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <CourseFormPage mode="create" />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route
+                    path=":courseId/edit"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <CourseFormPage mode="edit" />
+                      </RoleRequired>
+                    }
+                  />
+                </Route>
+
+                <Route path="sessions" element={<SessionsPage />}>
+                  <Route index element={<SessionsListPage />} />
+                  <Route path=":sessionId" element={<SessionDetailsPage />} />
+                  <Route
+                    path="new"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <SessionFormPage mode="create" />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route
+                    path=":sessionId/edit"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <SessionFormPage mode="edit" />
+                      </RoleRequired>
+                    }
+                  />
+                </Route>
 
                 <Route
                   path="enrollments"

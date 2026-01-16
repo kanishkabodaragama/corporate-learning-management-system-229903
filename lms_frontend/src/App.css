@@ -338,6 +338,386 @@
   text-decoration: underline;
 }
 
+/* Data UI (tables, forms, toolbars) */
+.noticeCard code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  font-size: 12px;
+}
+
+.toolbarCard {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.toolbarLeft,
+.toolbarRight {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.fieldInline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.labelSmall {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  font-family: inherit;
+}
+
+.select {
+  cursor: pointer;
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: rgba(55, 65, 81, 0.45);
+  box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.10);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  font-size: 12.5px;
+}
+
+.muted {
+  color: rgba(17, 24, 39, 0.7);
+}
+
+.helpText {
+  margin: 10px 0 0 0;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.65);
+  line-height: 1.5;
+}
+
+.alert {
+  margin: 10px 0 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.alertError {
+  border-color: rgba(239, 68, 68, 0.22);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-error);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-softer);
+  border: 1px solid var(--color-border);
+  font-weight: 800;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.button {
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 120ms ease, transform 120ms ease, border-color 120ms ease;
+  white-space: nowrap;
+}
+
+.button:hover {
+  background: var(--color-surface);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.buttonPrimary {
+  background: var(--color-primary);
+  color: white;
+  border-color: rgba(55, 65, 81, 0.25);
+}
+
+.buttonPrimary:hover {
+  opacity: 0.95;
+  background: var(--color-primary);
+}
+
+.buttonSecondary {
+  background: white;
+}
+
+.buttonDanger {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.06);
+  color: #991b1b;
+}
+
+.buttonDanger:hover {
+  background: rgba(239, 68, 68, 0.10);
+}
+
+.buttonLink {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  font-size: inherit;
+}
+
+.rowActions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 780px;
+  background: white;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 12px 12px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(17, 24, 39, 0.7);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+}
+
+.table tbody tr:hover {
+  background: rgba(55, 65, 81, 0.03);
+}
+
+.cellTitle {
+  font-weight: 900;
+  font-size: 13.5px;
+}
+
+.cellSub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.65);
+  line-height: 1.4;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid var(--color-border);
+  background: white;
+}
+
+.badgeSuccess {
+  background: rgba(16, 185, 129, 0.10);
+  border-color: rgba(16, 185, 129, 0.22);
+  color: #065f46;
+}
+
+.badgeNeutral {
+  background: rgba(55, 65, 81, 0.06);
+  border-color: rgba(55, 65, 81, 0.18);
+  color: rgba(17, 24, 39, 0.78);
+}
+
+.subHeaderCard {
+  padding: 16px 18px;
+}
+
+.subHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.subHeaderTitle {
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: -0.1px;
+}
+
+.subHeaderMeta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kvGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kvItem {
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.kvKey {
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(17, 24, 39, 0.65);
+}
+
+.kvValue {
+  margin-top: 6px;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.9);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.formRow2 > * {
+  flex: 1 1 320px;
+}
+
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-weight: 750;
+  color: rgba(17, 24, 39, 0.9);
+}
+
+.checkRow input {
+  margin-top: 3px;
+}
+
+.fieldError {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-error);
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.paginationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Keep KV grid readable on smaller widths */
+@media (max-width: 900px) {
+  .kvGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .table {
+    min-width: 640px;
+  }
+}
+
 /* Auth page */
 .authWrap {
   min-height: 100vh;
