@@ -267,6 +267,12 @@
   cursor: pointer;
 }
 
+.roleValue {
+  font-weight: 800;
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
 .userChip {
   padding: 8px 10px;
   border-radius: 999px;

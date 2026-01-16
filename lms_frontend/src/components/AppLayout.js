@@ -1,34 +1,39 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-
-const ROLE_OPTIONS = ["admin", "instructor", "learner"];
+import { useAuthorization } from "../auth/useAuthorization";
+import { titleCaseRole } from "../auth/roles";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", roles: ["admin", "instructor", "learner"] },
-  { to: "/courses", label: "Courses", roles: ["admin", "instructor", "learner"] },
-  { to: "/sessions", label: "Sessions", roles: ["admin", "instructor"] },
+
+  { to: "/courses", label: "Courses", labelByRole: { learner: "My Courses" }, roles: ["admin", "instructor", "learner"] },
+  { to: "/sessions", label: "Sessions", labelByRole: { learner: "My Sessions" }, roles: ["admin", "instructor", "learner"] },
+  { to: "/quizzes", label: "Quizzes", labelByRole: { learner: "My Quizzes" }, roles: ["admin", "instructor", "learner"] },
+
   { to: "/enrollments", label: "Enrollments", roles: ["admin", "instructor"] },
   { to: "/attendance", label: "Attendance", roles: ["admin", "instructor"] },
-  { to: "/quizzes", label: "Quizzes", roles: ["admin", "instructor", "learner"] },
+
   { to: "/approvals", label: "Approvals", roles: ["admin"] },
-  { to: "/reports", label: "Reports", roles: ["admin", "instructor"] },
+  { to: "/reports", label: "Reports", roles: ["admin"] },
   { to: "/settings", label: "Settings", roles: ["admin"] },
 ];
+
+function getItemLabel(item, role) {
+  return item?.labelByRole?.[role] ?? item.label;
+}
 
 // PUBLIC_INTERFACE
 export default function AppLayout() {
   const location = useLocation();
   const { user, signOut, isAuthActionLoading } = useAuth();
+  const { role, roleSource, isRoleLoading, roleLoadError, isProfilesTableMissing } = useAuthorization();
 
   // Desktop behavior
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Mobile drawer behavior (CSS handles layout; state controls open/close)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-
-  // Role-aware placeholder (will later come from Supabase auth/profile)
-  const [role, setRole] = useState("admin");
 
   const visibleNavItems = useMemo(() => {
     return NAV_ITEMS.filter((item) => item.roles.includes(role));
@@ -47,6 +52,8 @@ export default function AppLayout() {
     // UI is intentionally minimal; ProtectedRoute will redirect after session clears.
     await signOut();
   };
+
+  const roleLabel = titleCaseRole(role);
 
   return (
     <div className="shell">
@@ -93,26 +100,49 @@ export default function AppLayout() {
         </div>
 
         <nav className="nav" aria-label="Sections">
-          {visibleNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              title={item.label}
-              className={({ isActive }) =>
-                isActive ? "navLink navLinkActive" : "navLink"
-              }
-            >
-              <span className="navIcon" aria-hidden="true">
-                {item.label.slice(0, 1).toUpperCase()}
-              </span>
-              <span className="navLabel">{item.label}</span>
-            </NavLink>
-          ))}
+          {visibleNavItems.map((item) => {
+            const label = getItemLabel(item, role);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                title={label}
+                className={({ isActive }) => (isActive ? "navLink navLinkActive" : "navLink")}
+              >
+                <span className="navIcon" aria-hidden="true">
+                  {label.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="navLabel">{label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="sidebarFooter">
           <div className="sidebarHint">
-            Role-aware nav is a placeholder (roles/permissions come next).
+            {isRoleLoading ? (
+              "Loading permissions…"
+            ) : (
+              <>
+                Signed in as <strong>{roleLabel}</strong>
+                {roleSource ? <> ({roleSource})</> : null}.
+              </>
+            )}
+            {roleLoadError ? (
+              <>
+                <br />
+                <span>Note: {roleLoadError}</span>
+              </>
+            ) : null}
+            {isProfilesTableMissing ? (
+              <>
+                <br />
+                <span>
+                  Profiles table not found; defaulting to learner unless role is present in user
+                  metadata.
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
       </aside>
@@ -133,20 +163,10 @@ export default function AppLayout() {
           </div>
 
           <div className="topbarRight">
-            <label className="roleSelect">
+            <div className="roleSelect" aria-label="Current role">
               <span className="roleLabel">Role</span>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                aria-label="Select role (placeholder)"
-              >
-                {ROLE_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <span className="roleValue">{roleLabel}</span>
+            </div>
 
             <div className="userChip" aria-label="Signed in user">
               {user?.email || "Signed in"}

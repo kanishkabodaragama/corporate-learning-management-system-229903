@@ -5,6 +5,7 @@ import { applyThemeCssVariables } from "./theme";
 
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import RoleRequired from "./auth/RoleRequired";
 
 import AppLayout from "./components/AppLayout";
 
@@ -42,12 +43,50 @@ function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="courses" element={<CoursesPage />} />
                 <Route path="sessions" element={<SessionsPage />} />
-                <Route path="enrollments" element={<EnrollmentsPage />} />
-                <Route path="attendance" element={<AttendancePage />} />
+
+                <Route
+                  path="enrollments"
+                  element={
+                    <RoleRequired allowedRoles={["admin", "instructor"]}>
+                      <EnrollmentsPage />
+                    </RoleRequired>
+                  }
+                />
+                <Route
+                  path="attendance"
+                  element={
+                    <RoleRequired allowedRoles={["admin", "instructor"]}>
+                      <AttendancePage />
+                    </RoleRequired>
+                  }
+                />
+
                 <Route path="quizzes" element={<QuizzesPage />} />
-                <Route path="approvals" element={<ApprovalsPage />} />
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="settings" element={<SettingsPage />} />
+
+                <Route
+                  path="approvals"
+                  element={
+                    <RoleRequired allowedRoles={["admin"]}>
+                      <ApprovalsPage />
+                    </RoleRequired>
+                  }
+                />
+                <Route
+                  path="reports"
+                  element={
+                    <RoleRequired allowedRoles={["admin"]}>
+                      <ReportsPage />
+                    </RoleRequired>
+                  }
+                />
+                <Route
+                  path="settings"
+                  element={
+                    <RoleRequired allowedRoles={["admin"]}>
+                      <SettingsPage />
+                    </RoleRequired>
+                  }
+                />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Route>
