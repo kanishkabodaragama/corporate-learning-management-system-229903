@@ -36,6 +36,13 @@ import SessionsListPage from "./pages/sessions/SessionsListPage";
 import SessionDetailsPage from "./pages/sessions/SessionDetailsPage";
 import SessionFormPage from "./pages/sessions/SessionFormPage";
 
+import QuizzesListPage from "./pages/quizzes/QuizzesListPage";
+import QuizDetailsPage from "./pages/quizzes/QuizDetailsPage";
+import QuizBuilderPage from "./pages/quizzes/QuizBuilderPage";
+import QuizAssignPage from "./pages/quizzes/QuizAssignPage";
+import QuizTakePage from "./pages/quizzes/QuizTakePage";
+import QuizAttemptReviewPage from "./pages/quizzes/QuizAttemptReviewPage";
+
 // PUBLIC_INTERFACE
 function App() {
   /** Apply the centralized theme once on app start. */
@@ -124,7 +131,43 @@ function App() {
                   />
                 </Route>
 
-                <Route path="quizzes" element={<QuizzesPage />} />
+                <Route path="quizzes" element={<QuizzesPage />}>
+                  <Route index element={<QuizzesListPage />} />
+                  <Route
+                    path="new"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <QuizBuilderPage mode="create" />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route path=":quizId" element={<QuizDetailsPage />} />
+                  <Route
+                    path=":quizId/edit"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <QuizBuilderPage mode="edit" />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route
+                    path=":quizId/assign"
+                    element={
+                      <RoleRequired allowedRoles={["admin", "instructor"]}>
+                        <QuizAssignPage />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route
+                    path=":quizId/take"
+                    element={
+                      <RoleRequired allowedRoles={["learner"]}>
+                        <QuizTakePage />
+                      </RoleRequired>
+                    }
+                  />
+                  <Route path="attempts/:attemptId" element={<QuizAttemptReviewPage />} />
+                </Route>
 
                 <Route
                   path="approvals"

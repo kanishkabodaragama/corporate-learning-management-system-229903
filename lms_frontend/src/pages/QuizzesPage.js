@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import PlaceholderPage from "./PlaceholderPage";
+import { Outlet } from "react-router-dom";
 import { useAuthorization } from "../auth/useAuthorization";
 
 // PUBLIC_INTERFACE
@@ -17,15 +17,24 @@ export default function QuizzesPage() {
     if (role === "instructor") {
       return {
         title: "Quizzes",
-        description: "Create assessments for your courses and review learner results.",
+        description: "Create assessments for your courses, assign them to sessions, and review learner results.",
       };
     }
 
     return {
       title: "Quizzes",
-      description: "Manage assessments across the organization and monitor learning outcomes.",
+      description: "Manage quizzes across the organization and monitor learning outcomes.",
     };
   }, [role]);
 
-  return <PlaceholderPage title={title} description={description} />;
+  return (
+    <section className="page" aria-label={title}>
+      <header>
+        <h1 className="pageTitle">{title}</h1>
+        <p className="pageDesc">{description}</p>
+      </header>
+
+      <Outlet />
+    </section>
+  );
 }
