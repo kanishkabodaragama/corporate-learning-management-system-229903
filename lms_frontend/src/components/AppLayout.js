@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useAuthorization } from "../auth/useAuthorization";
 import { titleCaseRole } from "../auth/roles";
@@ -97,6 +97,7 @@ function computeBreadcrumbs(pathname) {
 // PUBLIC_INTERFACE
 export default function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut, isAuthActionLoading } = useAuth();
   const { role, roleSource, isRoleLoading, roleLoadError, isProfilesTableMissing } = useAuthorization();
 
@@ -143,8 +144,13 @@ export default function AppLayout() {
   const onToggleCollapsed = () => setIsCollapsed((v) => !v);
 
   const onSignOut = async () => {
-    // UI is intentionally minimal; ProtectedRoute will redirect after session clears.
-    await signOut();
+    // Call the shared auth signOut(), which supports both Demo Mode and Supabase auth.
+    // Then explicitly route to /login for immediate UX clarity.
+    try {
+      await signOut();
+    } finally {
+      navigate("/login", { replace: true });
+    }
   };
 
   const roleLabel = titleCaseRole(role);
@@ -308,13 +314,16 @@ export default function AppLayout() {
 
             <button
               type="button"
-              className="iconButton"
+              className="button buttonSecondary topbarLogoutButton"
               onClick={onSignOut}
               disabled={isAuthActionLoading}
               aria-label="Sign out"
-              title="Sign out"
+              title="Logout"
             >
-              ⎋
+              <span className="logoutIcon" aria-hidden="true">
+                ⎋
+              </span>
+              <span className="logoutText">Logout</span>
             </button>
           </div>
         </header>
