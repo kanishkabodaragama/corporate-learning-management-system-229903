@@ -1,9 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 import { DEFAULT_ROLE, getRoleFromUserMetadata, normalizeRole } from "./roles";
 import { DEMO_SESSION_STORAGE_KEY, findDemoAccount, isDemoModeEnabled } from "./demoMode";
 
 const AuthContext = createContext(null);
+
+/**
+ * Supabase's `auth.getSession()` is usually fast (localStorage-based), but in misconfigured
+ * environments it may hang or throw. Keep the UX responsive by enforcing a finite timeout.
+ */
+const AUTH_INIT_TIMEOUT_MS = 2500;
 
 function formatAuthError(err) {
   if (!err) return "Unknown error";
@@ -297,84 +303,126 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let isMounted = true;
 
+    async function getSessionWithTimeout(timeoutMs) {
+      let timeoutId;
+      try {
+        const timeoutPromise = new Promise((resolve) => {
+          timeoutId = setTimeout(() => {
+            resolve({
+              data: { session: null },
+              // Shape is "Supabase-like" but we treat it as best-effort.
+              error: { message: `Auth session check timed out after ${timeoutMs}ms.`, __isTimeout: true },
+            });
+          }, timeoutMs);
+        });
+
+        // Guard against `getSession()` hanging; whichever resolves first wins.
+        return await Promise.race([supabase.auth.getSession(), timeoutPromise]);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
+    }
+
     async function loadInitialSession() {
       setIsSessionLoading(true);
 
-      // Demo Mode: bootstrap ONLY from localStorage demo session.
-      if (demoModeEnabled) {
-        const demoUser = loadDemoUserFromStorage();
+      try {
+        // Demo Mode: bootstrap ONLY from localStorage demo session.
+        if (demoModeEnabled) {
+          const demoUser = loadDemoUserFromStorage();
+
+          if (!isMounted) return;
+
+          if (demoUser) {
+            setSession({ user: demoUser, access_token: "demo" });
+            setUser(demoUser);
+            void refreshRole(demoUser);
+          } else {
+            setSession(null);
+            setUser(null);
+            void refreshRole(null);
+          }
+
+          return;
+        }
+
+        // Non-demo: if a demo session was left behind, clear it (safety/cleanliness).
+        clearDemoSessionFromStorage();
+
+        // If Supabase isn't configured, don't attempt Supabase auth bootstrapping.
+        // This avoids confusing "infinite loading" when env vars are missing.
+        if (!isSupabaseConfigured) {
+          setSession(null);
+          setUser(null);
+          void refreshRole(null);
+          return;
+        }
+
+        const { data, error } = await getSessionWithTimeout(AUTH_INIT_TIMEOUT_MS);
 
         if (!isMounted) return;
 
-        if (demoUser) {
-          setSession({ user: demoUser, access_token: "demo" });
-          setUser(demoUser);
-          await refreshRole(demoUser);
-        } else {
-          setSession(null);
-          setUser(null);
-          await refreshRole(null);
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.warn("[Auth] getSession issue:", error);
         }
 
-        setIsSessionLoading(false);
-        return;
-      }
+        const nextSession = data?.session ?? null;
+        const nextUser = nextSession?.user ?? null;
 
-      // Non-demo: if a demo session was left behind, clear it (safety/cleanliness).
-      clearDemoSessionFromStorage();
+        setSession(nextSession);
+        setUser(nextUser);
 
-      const { data, error } = await supabase.auth.getSession();
+        // Do not block the session-loading flip on role lookups/network.
+        void refreshRole(nextUser);
+      } catch (err) {
+        if (!isMounted) return;
 
-      if (!isMounted) return;
-
-      if (error) {
         // eslint-disable-next-line no-console
-        console.error("[Auth] getSession error:", error);
-      }
+        console.error("[Auth] Failed to bootstrap session:", err);
 
-      const nextSession = data?.session ?? null;
-      const nextUser = nextSession?.user ?? null;
-
-      setSession(nextSession);
-      setUser(nextUser);
-      setIsSessionLoading(false);
-
-      if (nextUser) {
-        await refreshRole(nextUser);
-      } else {
-        await refreshRole(null);
+        setSession(null);
+        setUser(null);
+        void refreshRole(null);
+      } finally {
+        if (isMounted) setIsSessionLoading(false);
       }
     }
 
     loadInitialSession();
 
-    // Demo Mode: do NOT register Supabase auth listeners.
-    if (demoModeEnabled) {
+    // Demo Mode or missing Supabase env: do NOT register Supabase auth listeners.
+    if (demoModeEnabled || !isSupabaseConfigured) {
       return () => {
         isMounted = false;
       };
     }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      if (!isMounted) return;
+    let subscription;
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        if (!isMounted) return;
 
-      const nextUser = nextSession?.user ?? null;
-      setSession(nextSession ?? null);
-      setUser(nextUser);
-      setIsSessionLoading(false);
+        const nextUser = nextSession?.user ?? null;
+        setSession(nextSession ?? null);
+        setUser(nextUser);
 
-      if (nextUser) {
-        await refreshRole(nextUser);
-      } else {
-        await refreshRole(null);
-      }
-    });
+        // Ensure route guards can proceed promptly.
+        setIsSessionLoading(false);
+
+        // Best-effort role refresh (never block rendering).
+        void refreshRole(nextUser);
+      });
+
+      subscription = data?.subscription;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[Auth] Failed to register onAuthStateChange listener:", err);
+    }
 
     return () => {
       isMounted = false;
-      subscription?.unsubscribe();
+      subscription?.unsubscribe?.();
     };
   }, [refreshRole, demoModeEnabled]);
 
