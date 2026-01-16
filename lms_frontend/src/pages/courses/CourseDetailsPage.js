@@ -5,7 +5,62 @@ import { useAuthorization } from "../../auth/useAuthorization";
 import { isSupabaseConfigured } from "../../lib/supabaseClient";
 import { deleteCourse, getCourseById } from "../../data/courses";
 import { listSessions } from "../../data/sessions";
+import { getCoursePublishRequestForCourse, submitCoursePublishRequest } from "../../data/approvals";
 import { formatDateTime } from "../../utils/datetime";
+
+function PublishRequestModal({ open, onClose, onConfirm, busy }) {
+  const [comment, setComment] = useState("");
+
+  useEffect(() => {
+    if (open) setComment("");
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="modalOverlay" role="dialog" aria-modal="true" aria-label="Submit for approval">
+      <div className="modalCard">
+        <div className="modalHeader">
+          <div className="modalTitle">Submit for approval</div>
+          <button type="button" className="iconButton" onClick={onClose} aria-label="Close modal" disabled={busy}>
+            ×
+          </button>
+        </div>
+
+        <div className="modalBody">
+          <p className="cardBody" style={{ marginBottom: 12 }}>
+            Submitting will create (or update) a publishing approval request. An admin will approve or return it with
+            feedback.
+          </p>
+
+          <div className="formField">
+            <label className="label" htmlFor="publish-note">
+              Comment (optional)
+            </label>
+            <textarea
+              id="publish-note"
+              className="textarea"
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Optional note to the admin reviewer…"
+              disabled={busy}
+            />
+          </div>
+        </div>
+
+        <div className="modalActions">
+          <button type="button" className="button buttonSecondary" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button type="button" className="button buttonPrimary" onClick={() => onConfirm(comment)} disabled={busy}>
+            {busy ? "Submitting…" : "Submit"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // PUBLIC_INTERFACE
 export default function CourseDetailsPage() {
@@ -15,11 +70,17 @@ export default function CourseDetailsPage() {
   const { role, canAccess } = useAuthorization();
 
   const canManage = canAccess(["admin", "instructor"]);
+  const isInstructor = role === "instructor";
 
   const [course, setCourse] = useState(null);
   const [sessions, setSessions] = useState([]);
 
+  const [publishRequest, setPublishRequest] = useState(null);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmittingPublish, setIsSubmittingPublish] = useState(false);
+
   const [error, setError] = useState("");
 
   const title = useMemo(() => course?.title || "Course", [course?.title]);
@@ -34,6 +95,7 @@ export default function CourseDetailsPage() {
     if (cErr) {
       setCourse(null);
       setSessions([]);
+      setPublishRequest(null);
       setError(cErr);
       setIsLoading(false);
       return;
@@ -59,8 +121,22 @@ export default function CourseDetailsPage() {
     }
 
     setSessions(s);
+
+    if (isSupabaseConfigured && isInstructor && user?.id) {
+      const { data: pr, error: prErr } = await getCoursePublishRequestForCourse({ courseId });
+      if (prErr) {
+        // Keep course visible; show error in main area.
+        setPublishRequest(null);
+        setError(prErr);
+      } else {
+        setPublishRequest(pr ?? null);
+      }
+    } else {
+      setPublishRequest(null);
+    }
+
     setIsLoading(false);
-  }, [courseId, role, user?.id]);
+  }, [courseId, role, user?.id, isInstructor, user?.id]);
 
   useEffect(() => {
     load();
@@ -84,6 +160,39 @@ export default function CourseDetailsPage() {
 
     navigate("/courses");
   };
+
+  const onSubmitForApproval = async (comment) => {
+    if (!isInstructor || !user?.id || !course?.id) return;
+
+    setIsSubmittingPublish(true);
+    setError("");
+
+    const { data, error: e } = await submitCoursePublishRequest({
+      role,
+      actorUserId: user.id,
+      courseId: course.id,
+      comment,
+    });
+
+    if (e) {
+      setError(e);
+      setIsSubmittingPublish(false);
+      return;
+    }
+
+    setPublishRequest(data);
+    setIsSubmittingPublish(false);
+    setIsPublishModalOpen(false);
+  };
+
+  const publishStatusBadge = useMemo(() => {
+    const status = publishRequest?.status;
+    if (!status) return { cls: "badge badgeNeutral", label: "Not submitted" };
+    if (status === "pending") return { cls: "badge badgeWarning", label: "Pending review" };
+    if (status === "approved") return { cls: "badge badgeSuccess", label: "Approved" };
+    if (status === "returned") return { cls: "badge badgeError", label: "Returned" };
+    return { cls: "badge badgeNeutral", label: status };
+  }, [publishRequest?.status]);
 
   return (
     <>
@@ -130,6 +239,43 @@ export default function CourseDetailsPage() {
           </p>
         ) : null}
       </div>
+
+      {isInstructor ? (
+        <div className="card" aria-label="Publishing approval">
+          <div className="cardTitle">Publishing approval</div>
+
+          <div className="subHeaderMeta" style={{ marginBottom: 10 }}>
+            <span className={publishStatusBadge.cls}>{publishStatusBadge.label}</span>
+            {publishRequest?.id ? (
+              <Link className="inlineLink" to={`/approvals/publishing/${publishRequest.id}`}>
+                View request
+              </Link>
+            ) : null}
+          </div>
+
+          <p className="cardBody">
+            Instructors submit courses for publishing approval. Admins approve or return the request with feedback.
+          </p>
+
+          <div className="rowActions" style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="button buttonPrimary"
+              onClick={() => setIsPublishModalOpen(true)}
+              disabled={!isSupabaseConfigured || Boolean(course?.is_published) || isSubmittingPublish}
+            >
+              {publishRequest?.status === "returned" ? "Resubmit for approval" : "Submit for approval"}
+            </button>
+            <Link className="button buttonSecondary" to="/approvals">
+              Go to approvals
+            </Link>
+          </div>
+
+          {course?.is_published ? (
+            <p className="helpText">This course is already published.</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="card" aria-label="Course overview">
         <div className="cardTitle">Overview</div>
@@ -217,6 +363,13 @@ export default function CourseDetailsPage() {
           </div>
         ) : null}
       </div>
+
+      <PublishRequestModal
+        open={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onConfirm={onSubmitForApproval}
+        busy={isSubmittingPublish}
+      />
     </>
   );
 }

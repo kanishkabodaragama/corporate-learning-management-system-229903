@@ -24,7 +24,7 @@ const NAV_ITEMS = [
     roles: ["admin", "instructor", "learner"],
   },
 
-  { to: "/approvals", label: "Approvals", roles: ["admin"] },
+  { to: "/approvals", label: "Approvals", labelByRole: { learner: "Requests" }, roles: ["admin", "instructor", "learner"] },
   { to: "/reports", label: "Reports", roles: ["admin"] },
   { to: "/settings", label: "Settings", roles: ["admin"] },
 ];

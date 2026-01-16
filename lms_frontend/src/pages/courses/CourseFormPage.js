@@ -14,6 +14,7 @@ export default function CourseFormPage({ mode }) {
   const { role, canAccess } = useAuthorization();
 
   const canManage = canAccess(["admin", "instructor"]);
+  const canPublishDirectly = role === "admin";
 
   const isEdit = mode === "edit";
   const pageTitle = isEdit ? "Edit course" : "Create course";
@@ -95,12 +96,14 @@ export default function CourseFormPage({ mode }) {
     setIsSaving(true);
 
     if (isEdit) {
-      const { data, error } = await updateCourse(courseId, {
+      const payload = {
         title: title.trim(),
         description: description.trim() ? description.trim() : null,
-        is_published: Boolean(isPublished),
+        ...(role === "admin" ? { is_published: Boolean(isPublished) } : {}),
         ...(role === "admin" && ownerId.trim() ? { owner_id: ownerId.trim() } : {}),
-      });
+      };
+
+      const { data, error } = await updateCourse(courseId, payload);
 
       if (error) {
         setFormError(error);
@@ -115,7 +118,8 @@ export default function CourseFormPage({ mode }) {
     const { data, error } = await createCourse({
       title: title.trim(),
       description: description.trim() ? description.trim() : null,
-      is_published: Boolean(isPublished),
+      // Instructors do not publish directly (publishing is handled via approvals).
+      is_published: role === "admin" ? Boolean(isPublished) : false,
       owner_id: effectiveOwnerId,
     });
 
@@ -137,8 +141,8 @@ export default function CourseFormPage({ mode }) {
             <div className="subHeaderMeta">
               <span className="muted">
                 {role === "admin"
-                  ? "Admins can manage the catalog and ownership."
-                  : "Instructors can create and manage their own courses."}
+                  ? "Admins can manage the catalog and publishing."
+                  : "Instructors can create and manage their own courses (publishing requires approval)."}
               </span>
             </div>
           </div>
@@ -201,22 +205,28 @@ export default function CourseFormPage({ mode }) {
               />
             </div>
 
-            <div className="formRow">
-              <label className="checkRow">
-                <input
-                  type="checkbox"
-                  checked={isPublished}
-                  onChange={(e) => setIsPublished(e.target.checked)}
-                  disabled={!canManage || isSaving}
-                />
-                <span>
-                  Publish course (learners can see it)
-                  <span className="helpText" style={{ display: "block" }}>
-                    Draft courses are visible to admins and the owning instructor only (recommended with RLS).
+            {canPublishDirectly ? (
+              <div className="formRow">
+                <label className="checkRow">
+                  <input
+                    type="checkbox"
+                    checked={isPublished}
+                    onChange={(e) => setIsPublished(e.target.checked)}
+                    disabled={!canManage || isSaving}
+                  />
+                  <span>
+                    Publish course (learners can see it)
+                    <span className="helpText" style={{ display: "block" }}>
+                      Draft courses are visible to admins and the owning instructor only (recommended with RLS).
+                    </span>
                   </span>
-                </span>
-              </label>
-            </div>
+                </label>
+              </div>
+            ) : (
+              <div className="alert" style={{ borderColor: "rgba(55, 65, 81, 0.22)", background: "rgba(55, 65, 81, 0.06)" }}>
+                Publishing is handled via the Approvals workflow. After saving, open the course and “Submit for approval”.
+              </div>
+            )}
 
             {role === "admin" ? (
               <div className="formField">
@@ -232,9 +242,7 @@ export default function CourseFormPage({ mode }) {
                   disabled={!canManage || isSaving}
                 />
                 {errors.owner_id ? <div className="fieldError">{errors.owner_id}</div> : null}
-                <div className="helpText">
-                  Leave blank to keep current owner (or default to your user id when creating).
-                </div>
+                <div className="helpText">Leave blank to keep current owner (or default to your user id when creating).</div>
               </div>
             ) : null}
 

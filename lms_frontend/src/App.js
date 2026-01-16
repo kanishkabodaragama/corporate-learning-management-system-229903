@@ -32,6 +32,9 @@ import CoursesListPage from "./pages/courses/CoursesListPage";
 import CourseDetailsPage from "./pages/courses/CourseDetailsPage";
 import CourseFormPage from "./pages/courses/CourseFormPage";
 
+import ApprovalsListPage from "./pages/approvals/ApprovalsListPage";
+import ApprovalDetailsPage from "./pages/approvals/ApprovalDetailsPage";
+
 import SessionsListPage from "./pages/sessions/SessionsListPage";
 import SessionDetailsPage from "./pages/sessions/SessionDetailsPage";
 import SessionFormPage from "./pages/sessions/SessionFormPage";
@@ -169,14 +172,10 @@ function App() {
                   <Route path="attempts/:attemptId" element={<QuizAttemptReviewPage />} />
                 </Route>
 
-                <Route
-                  path="approvals"
-                  element={
-                    <RoleRequired allowedRoles={["admin"]}>
-                      <ApprovalsPage />
-                    </RoleRequired>
-                  }
-                />
+                <Route path="approvals" element={<ApprovalsPage />}>
+                  <Route index element={<ApprovalsListPage />} />
+                  <Route path=":category/:requestId" element={<ApprovalDetailsPage />} />
+                </Route>
                 <Route
                   path="reports"
                   element={
