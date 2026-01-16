@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
-import { DEFAULT_ROLE, getRoleFromUserMetadata, normalizeRole } from "./roles";
+import { DEFAULT_ROLE, normalizeRole } from "./roles";
 import { DEMO_SESSION_STORAGE_KEY, findDemoAccount, isDemoModeEnabled } from "./demoMode";
 
 const AuthContext = createContext(null);
@@ -161,8 +161,35 @@ async function tryCreateProfilesTableViaRpcOnce(createAttemptedRef) {
   return false;
 }
 
-async function loadRoleFromProfilesOrMetadata({ user, createAttemptedRef, setIsProfilesTableMissing }) {
-  // 1) Prefer profiles table
+async function ensureProfileRowExists({ user, createAttemptedRef, setIsProfilesTableMissing }) {
+  /**
+   * Ensures there is a `profiles` row for this user.
+   * IMPORTANT: We never auto-elevate; we only insert the safe default role (learner) if missing.
+   *
+   * This function is best-effort and must not prevent login if it fails (e.g., due to RLS).
+   */
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, role: DEFAULT_ROLE }, { onConflict: "id" });
+
+    if (error && isMissingProfilesTableError(error)) {
+      setIsProfilesTableMissing(true);
+      await tryCreateProfilesTableViaRpcOnce(createAttemptedRef);
+    }
+  } catch (_err) {
+    // Non-fatal; role load will still attempt to read.
+  }
+}
+
+async function loadRoleFromProfilesOnly({ user, createAttemptedRef, setIsProfilesTableMissing }) {
+  /**
+   * Loads role strictly from the `profiles` table.
+   * Requirement: when real Supabase auth is in use, bypass demo completely and remove
+   * demo/metadata fallback behavior.
+   *
+   * If profile is missing, we attempt to create it with DEFAULT_ROLE and then return DEFAULT_ROLE.
+   */
   try {
     const { data, error } = await supabase.from("profiles").select("id, role").eq("id", user.id).limit(1);
 
@@ -179,26 +206,13 @@ async function loadRoleFromProfilesOrMetadata({ user, createAttemptedRef, setIsP
       return { role: normalizeRole(row.role), roleSource: "profiles", profile: row };
     }
 
-    // No row yet: attempt to create (may fail due to RLS / missing table)
-    const { error: upsertError } = await supabase
-      .from("profiles")
-      .upsert({ id: user.id, role: DEFAULT_ROLE }, { onConflict: "id" });
-
-    if (!upsertError) {
-      return { role: DEFAULT_ROLE, roleSource: "profiles", profile: { id: user.id, role: DEFAULT_ROLE } };
-    }
-
-    // If profiles exists but we can't write, still fall back
-  } catch (_err) {
-    // fall through to metadata/default
+    // No row yet: attempt to create default row (may fail due to RLS, but should be allowed by policy).
+    await ensureProfileRowExists({ user, createAttemptedRef, setIsProfilesTableMissing });
+    return { role: DEFAULT_ROLE, roleSource: "profiles", profile: { id: user.id, role: DEFAULT_ROLE } };
+  } catch (err) {
+    // Non-fatal; default to learner for safety, but keep error for diagnostics.
+    return { role: DEFAULT_ROLE, roleSource: "default", profile: null, error: err };
   }
-
-  // 2) Fallback: auth metadata (app_metadata/user_metadata)
-  const metaRole = getRoleFromUserMetadata(user);
-  if (metaRole) return { role: metaRole, roleSource: "metadata", profile: null };
-
-  // 3) Default
-  return { role: DEFAULT_ROLE, roleSource: "default", profile: null };
 }
 
 // PUBLIC_INTERFACE
@@ -216,7 +230,7 @@ async function loadRoleFromProfilesOrMetadata({ user, createAttemptedRef, setIsP
  * - isSessionLoading (initial session check)
  * - isAuthActionLoading (during sign-in/sign-up/sign-out)
  * - role (admin/instructor/learner)
- * - roleSource ("profiles" | "metadata" | "default" | "demo")
+ * - roleSource ("profiles" | "default" | "demo")
  * - isRoleLoading
  * - roleLoadError
  * - isProfilesTableMissing
@@ -278,15 +292,27 @@ export function AuthProvider({ children }) {
       setIsRoleLoading(true);
       setRoleLoadError(null);
 
+      // Supabase auth active path: role must come from DB.
       try {
-        const result = await loadRoleFromProfilesOrMetadata({
+        await ensureProfileRowExists({
           user: targetUser,
           createAttemptedRef,
           setIsProfilesTableMissing,
         });
+
+        const result = await loadRoleFromProfilesOnly({
+          user: targetUser,
+          createAttemptedRef,
+          setIsProfilesTableMissing,
+        });
+
         setRole(result.role);
         setRoleSource(result.roleSource);
         setProfile(result.profile);
+
+        if (result.error) {
+          setRoleLoadError(formatRoleLoadError(result.error));
+        }
       } catch (err) {
         // Non-fatal; default to learner for safety.
         setRole(DEFAULT_ROLE);

@@ -8,7 +8,7 @@ import { isRoleAllowed, normalizeRole } from "./roles";
  *
  * @returns {{
  *  role: "admin" | "instructor" | "learner",
- *  roleSource: "profiles" | "metadata" | "default",
+ *  roleSource: "profiles" | "default" | "demo",
  *  isRoleLoading: boolean,
  *  roleLoadError: string | null,
  *  isProfilesTableMissing: boolean,
