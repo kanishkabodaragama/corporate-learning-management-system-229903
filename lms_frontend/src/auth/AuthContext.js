@@ -80,6 +80,42 @@ function clearDemoSessionFromStorage() {
   }
 }
 
+/**
+ * Best-effort cleanup for Supabase auth persistence keys in localStorage.
+ * Supabase JS v2 commonly uses keys like:
+ * - sb-<project-ref>-auth-token
+ * - sb-<project-ref>-auth-token-code-verifier
+ *
+ * This is defensive: signOut() should remove these, but we also clean up to ensure
+ * a reliable logout UX even if the remote call fails.
+ */
+function clearSupabaseAuthStorage() {
+  const ls = safeLocalStorage();
+  if (!ls) return;
+
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < ls.length; i += 1) {
+      const key = ls.key(i);
+      if (!key) continue;
+
+      // Covers `sb-<ref>-auth-token` and `sb-<ref>-auth-token-code-verifier`.
+      if (/^sb-.*-auth-token/i.test(key)) {
+        keysToRemove.push(key);
+      }
+
+      // Older key used by some versions/tooling.
+      if (key === "supabase.auth.token") {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((k) => ls.removeItem(k));
+  } catch (_err) {
+    // ignore
+  }
+}
+
 async function tryCreateProfilesTableViaRpcOnce(createAttemptedRef) {
   if (createAttemptedRef.current) return false;
   createAttemptedRef.current = true;
@@ -457,18 +493,47 @@ export function AuthProvider({ children }) {
       // Always clear any demo session (safe in all modes).
       clearDemoSessionFromStorage();
 
+      // IMPORTANT:
+      // Clear in-memory auth state immediately so navigation to /login cannot bounce back
+      // due to LoginPage seeing a still-authenticated user.
+      setSession(null);
+      setUser(null);
+      setIsSessionLoading(false);
+      await refreshRole(null);
+
       // Demo Mode: do not call Supabase at all.
       if (demoModeEnabled || String(user?.id || "").startsWith("demo-")) {
-        setSession(null);
-        setUser(null);
-        await refreshRole(null);
+        clearSupabaseAuthStorage();
         return { error: null };
       }
 
       const { error } = await supabase.auth.signOut();
-      if (error) return { error: formatAuthError(error) };
+      if (error) {
+        // Best-effort local cleanup to avoid resurrecting sessions from storage.
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch (_err) {
+          // ignore
+        }
+        clearSupabaseAuthStorage();
+
+        // eslint-disable-next-line no-console
+        console.warn("[Auth] signOut error:", error);
+        return { error: formatAuthError(error) };
+      }
+
       return { error: null };
     } catch (err) {
+      // If remote signOut fails, still try to remove local persistence.
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch (_err) {
+        // ignore
+      }
+      clearSupabaseAuthStorage();
+
+      // eslint-disable-next-line no-console
+      console.warn("[Auth] signOut exception:", err);
       return { error: formatAuthError(err) };
     } finally {
       setIsAuthActionLoading(false);

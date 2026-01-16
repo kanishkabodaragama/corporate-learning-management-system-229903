@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
+import { DEMO_SESSION_STORAGE_KEY } from "./auth/demoMode";
 
 function setEnv(key, value) {
   if (value === undefined) {
@@ -53,4 +54,30 @@ test("demo mode admin login sets role to admin and routes to /dashboard", async 
   // Role success (topbar shows current role)
   const roleChip = screen.getByLabelText(/current role/i);
   expect(roleChip).toHaveTextContent(/admin/i);
+});
+
+test("demo mode logout clears demo session and routes to /login", async () => {
+  setEnv("REACT_APP_DEMO_MODE", "true");
+  setEnv("REACT_APP_NODE_ENV", "development");
+
+  render(<App />);
+
+  const emailInput = await screen.findByLabelText(/email/i);
+  const passwordInput = screen.getByLabelText(/password/i);
+
+  fireEvent.change(emailInput, { target: { value: "admin@demo.lms" } });
+  fireEvent.change(passwordInput, { target: { value: "Admin!234" } });
+
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  // Confirm we're signed in
+  await screen.findByRole("heading", { name: /dashboard/i });
+  expect(window.localStorage.getItem(DEMO_SESSION_STORAGE_KEY)).toBeTruthy();
+
+  // Logout button uses aria-label="Sign out"
+  fireEvent.click(await screen.findByRole("button", { name: /sign out/i }));
+
+  // Confirm redirected to login and demo session removed
+  await screen.findByRole("heading", { name: /sign in/i });
+  expect(window.localStorage.getItem(DEMO_SESSION_STORAGE_KEY)).toBeNull();
 });

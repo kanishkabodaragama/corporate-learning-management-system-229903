@@ -147,7 +147,11 @@ export default function AppLayout() {
     // Call the shared auth signOut(), which supports both Demo Mode and Supabase auth.
     // Then explicitly route to /login for immediate UX clarity.
     try {
-      await signOut();
+      const { error } = await signOut();
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.warn("[Auth] Logout returned an error:", error);
+      }
     } finally {
       navigate("/login", { replace: true });
     }
