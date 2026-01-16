@@ -1004,3 +1004,126 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* Reports (dashboards) */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .metricsGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.metricCard {
+  padding: 14px;
+}
+
+.metricLabel {
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(17, 24, 39, 0.65);
+}
+
+.metricValue {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: -0.2px;
+  color: rgba(17, 24, 39, 0.92);
+}
+
+.metricHint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.62);
+  line-height: 1.4;
+}
+
+.metricSubLabel {
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.65);
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .reportGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  background: white;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.segmentedButton {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  color: rgba(17, 24, 39, 0.78);
+}
+
+.segmentedButton:hover {
+  background: var(--color-surface);
+}
+
+.segmentedButtonActive {
+  background: var(--color-primary-soft);
+  border-color: rgba(55, 65, 81, 0.25);
+  color: rgba(17, 24, 39, 0.92);
+}
+
+.sparklineRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sparklineSvg {
+  flex: 0 0 auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.sparklineLine {
+  stroke: var(--color-primary);
+  stroke-width: 2.4;
+  opacity: 0.9;
+}
+
+.sparklineDot {
+  fill: var(--color-primary);
+}
+
+.sparklineMeta {
+  min-width: 140px;
+}
+
+.spacer12 {
+  height: 12px;
+}
+
+.spacer8 {
+  height: 8px;
+}
